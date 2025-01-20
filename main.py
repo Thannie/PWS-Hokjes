@@ -280,6 +280,10 @@ def process_image_data(image, img_size=512, threshold=127, margin_ratio=0.05):
     # Check for excess checkboxes
     if len(checkbox_data) > EXPECTED_NUMBER_OF_CHECKBOXES * 1.3:
         raise ValueError(f"Too many checkboxes detected: {len(checkbox_data)}. Expected around {EXPECTED_NUMBER_OF_CHECKBOXES}.")
+    
+    # Check for too little checkboxes
+    if len(checkbox_data) < EXPECTED_NUMBER_OF_CHECKBOXES:
+        raise ValueError(f"Too little checkboxes detected: {len(checkbox_data)}. Expected around {EXPECTED_NUMBER_OF_CHECKBOXES}.")
 
     # Rank and filter checkboxes
     filtered_checkboxes = rank_and_filter_checkboxes(
@@ -422,7 +426,16 @@ def get_checkbox(b64_images=None, image_paths=None) -> list:
 
         selected_class_ids.append(selected_class_id)
 
-    return selected_class_ids
+    return_list = []
+
+    for idx, selected in enumerate(selected_class_ids):
+        return_list.append(
+            {
+                'request_number': idx,
+                'selected_checkbox': selected
+            })
+
+    return return_list
 
 if __name__ == "__main__":
     t_0 = time.time()
