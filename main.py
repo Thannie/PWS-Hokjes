@@ -10,7 +10,7 @@ import warnings
 # Suppress FutureWarnings temporarily
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-EXPECTED_NUMBER_OF_CHECKBOXES = 7
+EXPECTED_NUMBER_OF_CHECKBOXES: int
 
 # Load the model globally
 MODEL_WEIGHTS = 'yolov5/runs/train/checkbox_yolov5_transfer8/weights/best.pt'
@@ -18,89 +18,6 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 model = torch.hub.load('ultralytics/yolov5', 'custom', path=MODEL_WEIGHTS, force_reload=False)
 model.to(DEVICE)
 model.iou = 0.2
-
-import cv2
-import os
-
-# def visualize_detections(image, checkbox_data, output_path, prefix="before"):
-#     """
-#     Draw bounding boxes on a copy of 'image' to visualize detections.
-
-#     Args:
-#         image (numpy.ndarray): The original image (BGR).
-#         checkbox_data (list): List of tuples: (Checkbox, y1, x1, x2, y2).
-#         output_path (str): Folder path where you want to save the image.
-#         prefix (str): Prefix to add to saved file name (e.g., "before" or "after").
-#     """
-#     # Make a copy so we don't mutate the original image
-#     img_copy = image.copy()
-
-#     for idx, (checkbox, y1, x1, x2, y2) in enumerate(checkbox_data):
-#         # Pick a color (BGR format); you can choose any color you like
-#         color = (0, 255, 0)  # green
-
-#         # Draw rectangle
-#         cv2.rectangle(img_copy, (x1, y1), (x2, y2), color, 2)
-
-#         # Optional text label: index + fill percentage
-#         cv2.putText(
-#             img_copy,
-#             f"#{idx} {checkbox.fill_percentage:.1f}%",
-#             (x1, y1 - 10),
-#             cv2.FONT_HERSHEY_SIMPLEX,
-#             0.5,
-#             color,
-#             1
-#         )
-
-#     # Construct filename and save
-#     filename = f"{prefix}_detections.png"
-#     save_path = os.path.join(output_path, filename)
-#     cv2.imwrite(save_path, img_copy)
-#     print(f"Saved {prefix} visualization: {save_path}")
-
-def visualize_detections(image, checkbox_data, output_path, prefix="before", selected_index=None):
-    """
-    Draw bounding boxes on a copy of 'image' to visualize detections, highlighting the selected checkbox.
-
-    Args:
-        image (numpy.ndarray): The original image (BGR).
-        checkbox_data (list): List of tuples: (Checkbox, y1, x1, x2, y2).
-        output_path (str): Folder path where you want to save the image.
-        prefix (str): Prefix to add to saved file name (e.g., "before" or "after").
-        selected_index (int, optional): The index of the selected checkbox to highlight.
-    """
-    # Make a copy so we don't mutate the original image
-    img_copy = image.copy()
-
-    for idx, (checkbox, y1, x1, x2, y2) in enumerate(checkbox_data):
-        # Default color is green
-        color = (0, 255, 0)  # Green
-
-        # If the current checkbox is the selected one, use red
-        if idx == selected_index:
-            color = (0, 0, 255)  # Red
-
-        # Draw rectangle
-        cv2.rectangle(img_copy, (x1, y1), (x2, y2), color, 2)
-
-        # Add text label with index and fill percentage
-        cv2.putText(
-            img_copy,
-            f"#{idx+1} {checkbox.fill_percentage:.1f}%",
-            (x1, y1 - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            color,
-            1
-        )
-
-    # Construct filename and save
-    filename = f"{prefix}_detections.png"
-    save_path = os.path.join(output_path, filename)
-    cv2.imwrite(save_path, img_copy)
-    print(f"Saved {prefix} visualization: {save_path}")
-
 
 class Checkbox:
     """
@@ -150,6 +67,48 @@ class Checkbox:
         if not isinstance(other, Checkbox):
             return NotImplemented
         return self.fill_percentage >= other.fill_percentage
+    
+def visualize_detections(image, checkbox_data, output_path, prefix="before", selected_index=None):
+    """
+    Draw bounding boxes on a copy of 'image' to visualize detections, highlighting the selected checkbox.
+
+    Args:
+        image (numpy.ndarray): The original image (BGR).
+        checkbox_data (list): List of tuples: (Checkbox, y1, x1, x2, y2).
+        output_path (str): Folder path where you want to save the image.
+        prefix (str): Prefix to add to saved file name (e.g., "before" or "after").
+        selected_index (int, optional): The index of the selected checkbox to highlight.
+    """
+    # Make a copy so we don't mutate the original image
+    img_copy = image.copy()
+
+    for idx, (checkbox, y1, x1, x2, y2) in enumerate(checkbox_data):
+        # Default color is green
+        color = (0, 255, 0)  # Green
+
+        # If the current checkbox is the selected one, use red
+        if idx == selected_index:
+            color = (0, 0, 255)  # Red
+
+        # Draw rectangle
+        cv2.rectangle(img_copy, (x1, y1), (x2, y2), color, 2)
+
+        # Add text label with index and fill percentage
+        cv2.putText(
+            img_copy,
+            f"#{idx+1} {checkbox.fill_percentage:.1f}%",
+            (x1, y1 - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            color,
+            1
+        )
+
+    # Construct filename and save
+    filename = f"{prefix}_detections.png"
+    save_path = os.path.join(output_path, filename)
+    cv2.imwrite(save_path, img_copy)
+    print(f"Saved {prefix} visualization: {save_path}")
 
 def decode_base64_image(b64_string):
     """
@@ -202,78 +161,6 @@ def get_detections(model, image, img_size=512):
 
     detections = results.xyxy[0]  # Detections for the first image
     return detections
-
-# def rank_and_filter_checkboxes(checkbox_data, expected_count, spacing_tolerance=10, size_tolerance=0.2, horizontal_tolerance=10):
-#     """
-#     Ranks and filters checkboxes based on alignment, spacing, size, and horizontal alignment.
-#     Also removes checkboxes that are too close vertically.
-
-#     Args:
-#         checkbox_data (list of tuple): List of tuples containing Checkbox objects and their (y1, x1, x2, y2) coordinates.
-#         expected_count (int): The target number of checkboxes to select.
-#         spacing_tolerance (int): Minimum vertical spacing in pixels for two checkboxes to be considered separate.
-#         size_tolerance (float): Tolerance for size variation as a fraction of average size.
-#         horizontal_tolerance (int): Tolerance for horizontal deviation in pixels.
-
-#     Returns:
-#         list of Checkbox: Filtered and ranked list of Checkbox objects.
-#     """
-#     if not checkbox_data:
-#         raise ValueError("No checkbox data provided.")
-
-#     # Extract properties for calculations
-#     centers_x = [(x1 + x2) / 2 for _, y1, x1, x2, y2 in checkbox_data]
-#     heights = [y2 - y1 for _, y1, x1, x2, y2 in checkbox_data]
-#     widths = [x2 - x1 for _, y1, x1, x2, y2 in checkbox_data]
-
-#     # Calculate averages
-#     mean_x_center = np.mean(centers_x)
-#     mean_height = np.mean(heights)
-#     mean_width = np.mean(widths)
-
-#     # Sort by y1 (top-to-bottom order)
-#     sorted_checkboxes = sorted(checkbox_data, key=lambda x: x[1])
-
-#     # Filter out checkboxes that are too close vertically
-#     filtered_checkboxes = []
-#     last_y = None
-
-#     for checkbox, y1, x1, x2, y2 in sorted_checkboxes:
-#         if last_y is None or abs(y1 - last_y) > spacing_tolerance:
-#             filtered_checkboxes.append((checkbox, y1, x1, x2, y2))
-#             last_y = y1  # Update the last y value
-
-#     # Rank remaining checkboxes by likelihood score
-#     ranked_checkboxes = []
-#     for checkbox, y1, x1, x2, y2 in filtered_checkboxes:
-#         # Calculate individual scores
-#         center_x = (x1 + x2) / 2
-#         width = x2 - x1
-#         height = y2 - y1
-
-#         # Horizontal alignment score
-#         horizontal_score = 1 if abs(center_x - mean_x_center) <= horizontal_tolerance else 0
-
-#         # Size consistency score
-#         size_score = (
-#             1 if abs(width - mean_width) / mean_width <= size_tolerance and
-#                  abs(height - mean_height) / mean_height <= size_tolerance
-#             else 0
-#         )
-
-#         # Total likelihood score
-#         likelihood_score = horizontal_score + size_score
-#         ranked_checkboxes.append((checkbox, likelihood_score))
-
-#     # Sort by likelihood score in descending order
-#     ranked_checkboxes = sorted(ranked_checkboxes, key=lambda x: x[1], reverse=True)
-
-#     # Select the top-ranked checkboxes based on the expected count
-#     selected_checkboxes = [cb for cb, _ in ranked_checkboxes[:expected_count]]
-
-#     return selected_checkboxes
-
-import numpy as np
 
 def rank_and_filter_checkboxes(
     checkbox_data,
@@ -421,158 +308,6 @@ def analyze_fill_level(checkbox_img, threshold=127, fixed_margin=10):
 
     return fill_percentage
 
-# def process_image_data(image, img_size=512, threshold=127, margin_ratio=0.05):
-#     """
-#     Processes an image to detect and filter checkboxes.
-
-#     Args:
-#         image (numpy.ndarray): Input image in BGR format.
-#         img_size (int, optional): Image size for inference. Defaults to 512.
-#         threshold (int, optional): Threshold for binary conversion. Defaults to 127.
-#         margin_ratio (float, optional): Ratio of image dimensions to use as margin. Defaults to 0.05.
-
-#     Returns:
-#         list: List of Checkbox objects.
-#     """
-#     # Perform inference
-#     detections = get_detections(model, image, img_size)
-
-#     # List to store tuples of (Checkbox, y1, x1, x2, y2)
-#     checkbox_data = []
-
-#     # Iterate over detections
-#     for *xyxy, conf, cls in detections:
-#         # Extract bounding box coordinates
-#         x1, y1, x2, y2 = map(int, xyxy)
-
-#         # Validate bounding box dimensions
-#         if x2 <= x1 or y2 <= y1:
-#             continue
-
-#         # Crop the checkbox region from the image
-#         checkbox_img = image[y1:y2, x1:x2]
-
-#         # Analyze fill level with margin exclusion
-#         try:
-#             fill_percentage = analyze_fill_level(checkbox_img, threshold)
-#         except ValueError:
-#             continue
-
-#         # Create a Checkbox object
-#         checkbox = Checkbox(class_id=None, fill_percentage=fill_percentage)
-
-#         # Append the checkbox and its coordinates for filtering
-#         checkbox_data.append((checkbox, y1, x1, x2, y2))
-
-#     if not checkbox_data:
-#         raise ValueError("No valid checkboxes detected in the image.")
-
-#     # Check for excess checkboxes
-#     if len(checkbox_data) > EXPECTED_NUMBER_OF_CHECKBOXES * 1.3:
-#         raise ValueError(f"Too many checkboxes detected: {len(checkbox_data)}. Expected around {EXPECTED_NUMBER_OF_CHECKBOXES}.")
-    
-#     # Check for too little checkboxes
-#     if len(checkbox_data) < EXPECTED_NUMBER_OF_CHECKBOXES:
-#         raise ValueError(f"Too little checkboxes detected: {len(checkbox_data)}. Expected around {EXPECTED_NUMBER_OF_CHECKBOXES}.")
-
-#     # Rank and filter checkboxes
-#     filtered_checkboxes = rank_and_filter_checkboxes(
-#         checkbox_data,
-#         expected_count=EXPECTED_NUMBER_OF_CHECKBOXES,
-#         spacing_tolerance=10,
-#         size_tolerance=0.2,
-#         horizontal_tolerance=10
-#     )
-
-#     # Assign class IDs based on sorted order
-#     for idx, checkbox in enumerate(filtered_checkboxes, start=1):
-#         checkbox.class_id = idx
-
-#     return filtered_checkboxes
-
-# def process_image_data(image, img_size=512, threshold=127, margin_ratio=0.05, visualize=False, output_path=".", idx=""):
-#     """
-#     Processes an image to detect and filter checkboxes.
-#     ...
-#     Args:
-#         ...
-#         visualize (bool): If True, will save before/after detection images.
-#         output_path (str): Where to save the visualization images.
-#     """
-#     # 1) Perform inference
-#     detections = get_detections(model, image, img_size)
-
-#     # 2) Build checkbox_data
-#     checkbox_data = []
-#     for *xyxy, conf, cls in detections:
-#         x1, y1, x2, y2 = map(int, xyxy)
-#         if x2 <= x1 or y2 <= y1:
-#             continue
-
-#         # Crop + fill analysis
-#         checkbox_img = image[y1:y2, x1:x2]
-#         try:
-#             fill_percentage = analyze_fill_level(checkbox_img, threshold)
-#         except ValueError:
-#             continue
-
-#         cbox = Checkbox(class_id=None, fill_percentage=fill_percentage)
-#         checkbox_data.append((cbox, y1, x1, x2, y2))
-
-#     # (Optional) Visualization BEFORE filtering:
-#     if visualize:
-
-#         output_dir = os.path.join(os.getcwd(), output_path)  # Relative to script's directory
-#         os.makedirs(output_dir, exist_ok=True)
-
-
-#         visualize_detections(
-#             image, 
-#             checkbox_data,
-#             output_path=output_path,
-#             prefix=f"{idx}-before"
-#         )
-
-#     # Check your typical logic/warnings here...
-
-#     # 3) Filter checkboxes
-#     filtered_checkboxes = rank_and_filter_checkboxes(
-#         checkbox_data,
-#         expected_count=EXPECTED_NUMBER_OF_CHECKBOXES
-#     )
-
-#     # (Optional) Visualization AFTER filtering:
-#     # Build the same "tuple" format so we can reuse the same visualize function
-#     # by re-injecting bounding box coords for the final set.
-#     # NOTE: rank_and_filter_checkboxes returns only the `Checkbox` objects,
-#     # so we need to pair them back with coords. There's more than one way
-#     # to handle this; simplest is to track which ones survived:
-#     final_data = []
-#     for (cbox, y1, x1, x2, y2) in checkbox_data:
-#         if cbox in filtered_checkboxes:
-#             # cbox was selected
-#             final_data.append((cbox, y1, x1, x2, y2))
-
-#     if visualize:
-#         selected_index = None
-#         if len(filtered_checkboxes) > 0:
-#             selected_index = filtered_checkboxes.index(sorted_checkboxes[0])
-
-#         visualize_detections(
-#             image,
-#             final_data,
-#             output_path=output_path,
-#             prefix=f"{idx}-after",
-#             selected_index=selected_index
-#         )
-
-
-#     # 4) Assign IDs
-#     for idx, checkbox in enumerate(filtered_checkboxes, start=1):
-#         checkbox.class_id = idx
-
-#     return filtered_checkboxes
-
 
 def process_image_data(image, img_size=512, threshold=127, margin_ratio=0.05, visualize=False, output_path=".", idx=""):
     """
@@ -618,6 +353,16 @@ def process_image_data(image, img_size=512, threshold=127, margin_ratio=0.05, vi
 
     # Optional: visualize detections after filtering
     final_data = [(cb, y1, x1, x2, y2) for cb, y1, x1, x2, y2 in checkbox_data if cb in filtered_checkboxes]
+
+    # Sort checkboxes by their y and x positions (top to bottom, left to right)
+    final_data_sorted = sorted(final_data, key=lambda x: (x[1], x[2]))  # Sort by y1, then x1
+
+    # Extract sorted checkboxes based on position
+    sorted_checkboxes = [cb for cb, _, _, _, _ in final_data_sorted]
+
+    # Assign class IDs based on positional order
+    for idx, checkbox in enumerate(sorted_checkboxes, start=1):
+        checkbox.class_id = idx
 
     # Determine the selected checkbox (top filled)
     selected_checkbox = sorted_checkboxes[0] if sorted_checkboxes else None
@@ -682,11 +427,12 @@ def analyze_top_checkboxes(checkboxes, percentage_threshold=5, individual_thresh
 
     return results, sorted_checkboxes
 
-def get_checkbox(b64_images=None, image_paths=None) -> list:
+def get_checkbox(num_of_checkboxes:int, b64_images=None, image_paths=None) -> list:
     """
     Process multiple images to detect selected checkboxes.
 
     Args:
+        num_of_checkboxes (int): How many checkboxes should be detected.
         b64_images (list of str, optional): List of Base64-encoded image strings.
         image_paths (list of str, optional): List of paths to input images.
 
@@ -695,6 +441,9 @@ def get_checkbox(b64_images=None, image_paths=None) -> list:
               -1 => No checkbox was selected
               -2 => No conclusive result
     """
+    global EXPECTED_NUMBER_OF_CHECKBOXES
+    EXPECTED_NUMBER_OF_CHECKBOXES = num_of_checkboxes
+
     if b64_images:
         if not isinstance(b64_images, list):
             raise TypeError("b64_images should be a list of Base64-encoded strings.")
@@ -734,7 +483,7 @@ def get_checkbox(b64_images=None, image_paths=None) -> list:
 
         try:
             # Process image to get sorted checkboxes
-            sorted_checkboxes = process_image_data(image, img_size=512, threshold=127, margin_ratio=0.05, visualize=True, output_path="detected_checkboxes", idx=img_idx)
+            sorted_checkboxes = process_image_data(image, img_size=512, threshold=127, margin_ratio=0.05, visualize=False, output_path="detected_checkboxes", idx=img_idx)
 
             # Analyze top checkboxes
             if len(sorted_checkboxes) >= 2:
@@ -808,11 +557,8 @@ if __name__ == "__main__":
     # Collect results
     results = []
     for idx, obj in enumerate(selected_checkboxes):
-        
-
-
         result = {
-            "image_index": idx+1,
+            "image_index": idx,
             "status": None,
             "selected_checkbox": None,
         }

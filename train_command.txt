@@ -1,2 +1,0 @@
-python train.py --img 512 --batch 16 --epochs 125 --data checkbox_dataset.yaml --cfg yolov5s.yaml --weights yolov5s.pt --name checkbox_yolov5
-python train.py --imgsz 512 --batch-size 16 --epochs 75 --data checkbox_dataset.yaml --cfg yolov5s.yaml --weights yolov5s.pt --name checkbox_yolov5_transfer --cache --device 0
